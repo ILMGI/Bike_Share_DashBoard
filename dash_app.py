@@ -14,18 +14,23 @@ from streamlit_folium import folium_static
 import random 
 import requests
 import math
-
-
-# Constants
-FILE_PATH = 'path_to_your_file/Divvy_Trips_2014_Q1Q2.csv'
+from io import StringIO
 
 
 @st.cache_data
-def load_data(file_path, user_type=None):
-    """Loads data and filters by user type if specified."""
-    df = pd.read_csv(file_path)
+def load_data(url, user_type=None):
+    """Loads data from a URL and filters by user type if specified."""
+    response = requests.get(url)
+    df = pd.read_csv(StringIO(response.text))
     return df if user_type is None else df[df['usertype'] == user_type]
 
+# Example URL (replace with your actual file URL)
+FILE_URL = 'https://drive.google.com/file/d/1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ/view?usp=sharing'
+
+# Load Data
+data_all = load_data(FILE_URL)
+data_customer = load_data(FILE_URL, 'Customer')
+data_subscriber = load_data(FILE_URL, 'Subscriber')
 
 # Custom CSS to make tab text bigger
 st.markdown("""
@@ -35,11 +40,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# Load Data
-data_all = load_data(FILE_PATH)
-data_customer = load_data(FILE_PATH, 'Customer')
-data_subscriber = load_data(FILE_PATH, 'Subscriber')
 
 # Convert 'starttime' column to datetime
 data_all['starttime'] = pd.to_datetime(data_all['starttime'], format='%m/%d/%Y %H:%M')
