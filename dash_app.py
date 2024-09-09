@@ -17,20 +17,32 @@ import math
 from io import StringIO
 
 
+# Replace 'FILE_ID' with your actual Google Drive file ID
+FILE_ID = '1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ'
+FILE_URL = f'https://drive.google.com/uc?export=download&id={FILE_ID}'
+
 @st.cache_data
 def load_data(url, user_type=None):
     """Loads data from a URL and filters by user type if specified."""
-    response = requests.get(url)
-    df = pd.read_csv(StringIO(response.text))
-    return df if user_type is None else df[df['usertype'] == user_type]
-
-# Example URL (replace with your actual file URL)
-FILE_URL = 'https://drive.google.com/file/d/1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ/view?usp=sharing'
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Check for HTTP errors
+        df = pd.read_csv(StringIO(response.text))
+        
+        # Debugging: Check columns and sample data
+        st.write("Columns in the DataFrame:", df.columns)
+        st.write(df.head())
+        
+        return df if user_type is None else df[df['usertype'] == user_type]
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame or handle as needed
 
 # Load Data
 data_all = load_data(FILE_URL)
 data_customer = load_data(FILE_URL, 'Customer')
 data_subscriber = load_data(FILE_URL, 'Subscriber')
+
 
 # Custom CSS to make tab text bigger
 st.markdown("""
