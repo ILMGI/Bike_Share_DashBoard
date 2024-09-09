@@ -16,18 +16,15 @@ import requests
 import math
 
 
-# File uploader
-uploaded_file = st.file_uploader("Upload CSV", type="csv")
+# Constants
+FILE_PATH = 'path_to_your_file/Divvy_Trips_2014_Q1Q2.csv'
+
 
 @st.cache_data
-def load_data(file, user_type=None):
+def load_data(file_path, user_type=None):
     """Loads data and filters by user type if specified."""
-    if file is not None:
-        # Read the file as a buffer
-        file.seek(0)  # Ensure the file pointer is at the start
-        df = pd.read_csv(file)
-        return df if user_type is None else df[df['usertype'] == user_type]
-    return None
+    df = pd.read_csv(file_path)
+    return df if user_type is None else df[df['usertype'] == user_type]
 
 
 # Custom CSS to make tab text bigger
@@ -40,10 +37,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load Data
-data_all = load_data(uploaded_file)
-data_customer = load_data(uploaded_file, 'Customer')
-data_subscriber = load_data(uploaded_file, 'Subscriber')
-
+data_all = load_data(FILE_PATH)
+data_customer = load_data(FILE_PATH, 'Customer')
+data_subscriber = load_data(FILE_PATH, 'Subscriber')
 
 # Convert 'starttime' column to datetime
 data_all['starttime'] = pd.to_datetime(data_all['starttime'], format='%m/%d/%Y %H:%M')
