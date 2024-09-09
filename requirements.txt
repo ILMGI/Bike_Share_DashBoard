@@ -7,3 +7,4 @@ geopy
 streamlit-folium
 numpy
 requests
+io
