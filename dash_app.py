@@ -2,67 +2,47 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import datetime
-import plotly.express as px
 from streamlit_elements import elements, mui, html, dashboard
-import plotly.io as pio
 import numpy as np
-import folium
-from folium.plugins import HeatMap
 from geopy.geocoders import Nominatim
 import time
 from streamlit_folium import folium_static
-import random 
-import requests
-import math
-from io import StringIO
-
-
-# Replace 'FILE_ID' with your actual Google Drive file ID
-FILE_ID = '1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ'
-FILE_URL = f'https://drive.google.com/uc?export=download&id={FILE_ID}'
-
-def get_confirm_token(response):
-    """Extracts the confirm token from the Google Drive response if available."""
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-    return None
-
-def save_response_content(response, destination):
-    """Writes the response content to a destination file."""
-    CHUNK_SIZE = 32768
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:  # filter out keep-alive new chunks
-                f.write(chunk)
+import gdown
+import tempfile
+import os
 
 @st.cache_data
-def load_data_from_drive(file_id):
-    """Downloads large files from Google Drive and loads data into a pandas DataFrame."""
-    base_url = "https://drive.google.com/uc?export=download"
-    session = requests.Session()
-
-    response = session.get(base_url, params={'id': file_id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {'id': file_id, 'confirm': token}
-        response = session.get(base_url, params=params, stream=True)
-
-    # Save the content into a temporary file
-    temp_file = "/tmp/temp_data.csv"
-    save_response_content(response, temp_file)
+def load_data_gdown(file_id):
+    """Downloads the file from Google Drive using gdown."""
+    url = f"https://drive.google.com/uc?id={file_id}"
     
-    # Load the data into a DataFrame
-    return pd.read_csv(temp_file)
-
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as tmp_file:
+        temp_path = tmp_file.name
+    
+    try:
+        # Download the file
+        gdown.download(url, temp_path, quiet=False)
+        
+        # Load the data into a DataFrame
+        data = pd.read_csv(temp_path)
+        
+        return data
+    finally:
+        # Ensure the temporary file is removed
+        os.unlink(temp_path)
 
 # Load Data
-data_all = load_data(FILE_URL)
-data_customer = load_data(FILE_URL, 'Customer')
-data_subscriber = load_data(FILE_URL, 'Subscriber')
+FILE_ID = '1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ'
+data_all = load_data_gdown(FILE_ID)
 
+# Function to filter data based on type
+def filter_data(data, data_type):
+    return data[data['usertype'] == data_type]
 
+# Load Customer and Subscriber data
+data_customer = filter_data(data_all, 'Customer')
+data_subscriber = filter_data(data_all, 'Subscriber')
 # Custom CSS to make tab text bigger
 st.markdown("""
 <style>
