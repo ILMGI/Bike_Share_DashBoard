@@ -21,22 +21,41 @@ from io import StringIO
 FILE_ID = '1alxVFdAjnOjiqRbxtx2MTgdJawh5dfiJ'
 FILE_URL = f'https://drive.google.com/uc?export=download&id={FILE_ID}'
 
+def get_confirm_token(response):
+    """Extracts the confirm token from the Google Drive response if available."""
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    """Writes the response content to a destination file."""
+    CHUNK_SIZE = 32768
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+
 @st.cache_data
-def load_data(url, user_type=None):
-    """Loads data from a URL and filters by user type if specified."""
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Check for HTTP errors
-        df = pd.read_csv(StringIO(response.text))
-        
-        # Debugging: Check columns and sample data
-        st.write("Columns in the DataFrame:", df.columns)
-        st.write(df.head())
-        
-        return df if user_type is None else df[df['usertype'] == user_type]
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame or handle as needed
+def load_data_from_drive(file_id):
+    """Downloads large files from Google Drive and loads data into a pandas DataFrame."""
+    base_url = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+
+    response = session.get(base_url, params={'id': file_id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(base_url, params=params, stream=True)
+
+    # Save the content into a temporary file
+    temp_file = "/tmp/temp_data.csv"
+    save_response_content(response, temp_file)
+    
+    # Load the data into a DataFrame
+    return pd.read_csv(temp_file)
+
 
 # Load Data
 data_all = load_data(FILE_URL)
