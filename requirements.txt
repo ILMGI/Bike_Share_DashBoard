@@ -1,9 +1,10 @@
 streamlit
 pandas
 plotly
-streamlit-elements
+numpy
 folium
 geopy
-streamlit-folium
-numpy
 requests
+gdown
+streamlit_folium
+streamlit_elements
